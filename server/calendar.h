@@ -11,6 +11,7 @@ public:
 	int end;
 	string event;
 	cal_entry(int,int,string);
+	bool operator==(cal_entry);
 };
 
 class calendar{
