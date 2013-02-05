@@ -21,10 +21,6 @@ string to_string(int a){
 }
 
 cal_entry::cal_entry(int start,int end,string event){
-	if(start > end){
-		printf("ERROR start must be before end\n");
-		exit(2);
-	}
 	this->start = start;
 	this->end = end;
 	this->event = event;
@@ -38,7 +34,7 @@ bool cal_entry::operator==(cal_entry other){
 	else
 		return false;
 }
-bool calendar::add(int date,cal_entry entry){
+string calendar::add(int date,cal_entry entry){
 
 	list<cal_entry> prev_entry;
 	list<cal_entry>::iterator it;
@@ -49,6 +45,7 @@ bool calendar::add(int date,cal_entry entry){
 	//If date is not there, make a new entry in data
 	if(prev_it == data.end()){
 		data[date].push_back(entry);
+		return "Added Successfully\n"; 
 	}else{
 
 		prev_entry = data.at(date);
@@ -56,7 +53,7 @@ bool calendar::add(int date,cal_entry entry){
 		if(prev_entry.empty()){
 			prev_entry.push_back(entry);
 			data.at(date) = prev_entry;
-			return true;
+			return "Added Successfully\n";
 		}
 
 		//finding the right place to insert the new event
@@ -66,7 +63,7 @@ bool calendar::add(int date,cal_entry entry){
 			if(entry.end <= (*it).start){
 				prev_entry.insert(it,entry);
 				data.at(date) = prev_entry;
-				return true;
+				return "Added Successfully\n";
 			}
 			// if event is after current entry
 			else if(entry.start > (*it).end){
@@ -74,20 +71,20 @@ bool calendar::add(int date,cal_entry entry){
 				if((*it) == prev_entry.back()){					
 					prev_entry.push_back(entry);
 					data.at(date) = prev_entry;
-					return true;
+					return "Added Successfully\n";
 				}
 				else
 					continue;
 			}
 			else
-				return false;
+				return "ERROR : Conflict detected\n";
 		}
 	}
-	return false;
+	return "ERROR : Somthing unknown error happend\n";
 }
 
 
-int calendar::remove(int date,int start){
+string calendar::remove(int date,int start){
 	list<cal_entry> list_date;
 	list<cal_entry>::iterator it;
 
@@ -97,7 +94,7 @@ int calendar::remove(int date,int start){
 	
 	//checking of entry for that date exists
 	if(map_it == data.end()){
-		return 0;
+		return "ERROR : No such date entry exists\n";
 	}
 
 	list_date = data.at(date);
@@ -105,14 +102,14 @@ int calendar::remove(int date,int start){
 		if((*it).start == start){
 			list_date.erase(it);
 			data.at(date) = list_date;
-			return 1;
+			return "Successfully Removed\n";
 		}
 	}
-	return 0;
+	return "ERROR : No event for this start time\n";
 
 }
 
-int calendar::update(int date,cal_entry entry){
+string calendar::update(int date,cal_entry entry){
 	list<cal_entry> list_date;
 	list<cal_entry>::iterator it;
 
@@ -122,7 +119,7 @@ int calendar::update(int date,cal_entry entry){
 	
 	//checking of entry for that date exists
 	if(map_it == data.end()){
-		return 0;
+		return "ERROR : No such entry exists\n";
 	}
 
 	list_date = data.at(date);
@@ -131,10 +128,10 @@ int calendar::update(int date,cal_entry entry){
 			(*it).end = entry.end;
 			(*it).event = entry.event;
 			data.at(date) = list_date;
-			return 1;
+			return "Successfully Updated\n";
 		}
 	}
-	return 0;
+	return "ERROR : Unknow error happened\n";
 }
 
 string calendar::get(int date,int start){
@@ -148,7 +145,7 @@ string calendar::get(int date,int start){
 	
 	//checking of entry for that date exists
 	if(map_it == data.end()){
-		return "NO ENTRY FOR "+to_string(date)+"/n";
+		return "NO ENTRY FOR "+to_string(date)+"\n";
 	}
 
 	list_date = data.at(date);
@@ -203,17 +200,44 @@ string calendar::get(int date){
 	return result;
 }
 
+calendar calendar_users::get_data_user(string username){
+	
+	calendar a;
+	map<string,calendar>::iterator c = data_user.find(username);
+	if(c != data_user.end())
+		return data_user.at(username);
+	else
+		data_user[username] = a;
+	return data_user[username];
+}
+
+void calendar_users::put_data_user(string username,calendar cal){
+	data_user[username] = cal;
+}
+/*
 int main(){
+
+	calendar_users cal_user;
 	string a;
 	cal_entry test1(100,105,"kuch bhi");
 	cal_entry test2(110,205,"asdfbhi");
 	calendar cal;
 	cal.add(91092,test1);
 	cal.add(91092,test2);
-	cout << cal.get(91092) << endl;
-	cout << cal.get(91092,100) << endl;
+
+	cal_user.put_data_user("harsh",cal);
+	
+	calendar c =cal_user.get_data_user("harsh");
+
+	cout << c.get(91092) << endl;
+	cout << c.get(91092,100) << endl;
 	cal_entry test3(110,250,"updaetd");
-	cal.update(91092,test3);
-	cout << cal.get(91092) << endl;
+	c.update(91092,test3);
+	cal_user.put_data_user("harsh",c);
+	cout << cal_user.get_data_user("harsh").get(91092) << endl;
+
+
+
+
 	return 0;
-}
+}*/

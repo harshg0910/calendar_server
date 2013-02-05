@@ -22,9 +22,9 @@ class calendar{
 
 	map< int,list<cal_entry> > data;
 public:
-	bool add(int date,cal_entry entry);
-	int remove(int date,int start);
-	int update(int date,cal_entry entry);
+	string add(int date,cal_entry entry);
+	string remove(int date,int start);
+	string update(int date,cal_entry entry);
 	string get(int date,int start);
 	string get(int date);
 };
@@ -35,3 +35,10 @@ public:
 */
 int check_date(int date);
 
+//Class containing data for all users
+class calendar_users{
+public:
+	map< string , calendar> data_user;
+	calendar get_data_user(string username);
+	void put_data_user(string username,calendar cal);
+};
