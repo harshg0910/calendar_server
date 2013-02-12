@@ -61,6 +61,7 @@ string calendar::add(int date,cal_entry entry){
 			prev_entry.push_back(entry);
 			data.at(date) = prev_entry;
 			return "Added Successfully\n";
+			cout << "$$$$$$$$$$$$$$$$$$\n";
 		}
 
 		//finding the right place to insert the new event
@@ -244,7 +245,6 @@ string calendar::get_ith(int i){
 					result += " Event:";
 					result += (*it).event;
 					result += "\n";
-					cout << i <<'\t'<< index << endl ;
 					}
 
 				}
@@ -328,8 +328,9 @@ string maintain_calendar(string input_string){
 
 		cal_entry entry(start,end,event);
 		string result = cal.add(date,entry);
-		if(result == "Added Successfully\n")
+		if(result == "Added Successfully\n"){
 			cal_user.put_data_user(user,cal);
+		}
 		return result;
 
 
