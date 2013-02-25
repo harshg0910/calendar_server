@@ -7,6 +7,9 @@
 //Global calnedar_user
 calendar_users cal_user;
 
+//Global lock for user
+map<string,bool> lock;
+
 
 int check_date(int date){
 /*	short month,day,year;
@@ -61,7 +64,6 @@ string calendar::add(int date,cal_entry entry){
 			prev_entry.push_back(entry);
 			data.at(date) = prev_entry;
 			return "Added Successfully\n";
-			cout << "$$$$$$$$$$$$$$$$$$\n";
 		}
 
 		//finding the right place to insert the new event
@@ -298,6 +300,8 @@ void calendar_users::put_data_user(string username,calendar cal){
 string maintain_calendar(string input_string){
 	vector<string> input;
 	char buff[300];
+	string output = "";
+
 	strcpy(buff,input_string.c_str());
 	char* token = strtok(buff, " ");
 	do{	
@@ -311,19 +315,31 @@ string maintain_calendar(string input_string){
 	string user = input[0];
 	//Getting calendar corresponding to user
 
+	//getting lock
+	//new user for lock
+	if(lock.find(user) == lock.end()){
+		lock[user] = false;
+	}else{
+		//lock is taken by another thread
+		while(!lock[user]);
+		lock[user] = false;
+	}
+
+	cout << "in critical for user - " << user <<endl;
+	//Critical section
 	calendar cal = cal_user.get_data_user(user);
 
 	string func = input[1];
 	if(func == "add"){
 		if(input.size() != 6)
-			return "ERROR : Improper number of arguments for add\n";
+			output = "ERROR : Improper number of arguments for add\n";
 		int date = atoi(input[2].c_str());
 		int start = atoi(input[3].c_str());
 		int end = atoi(input[4].c_str());
 		if(date<=0 || start<=0 || end<=0)
-			return "ERROR : Date,start and end time must be positive integers\n";
+			output = "ERROR : Date,start and end time must be positive integers\n";
 		if(start > end )
-			return "ERROR : Start must be before end\n";
+			output = "ERROR : Start must be before end\n";
 		string event = input[5];
 
 		cal_entry entry(start,end,event);
@@ -331,40 +347,40 @@ string maintain_calendar(string input_string){
 		if(result == "Added Successfully\n"){
 			cal_user.put_data_user(user,cal);
 		}
-		return result;
+		output = result;
 
 
 	}
 	else if(func=="remove"){
 		if(input.size() != 4)
-			return "ERROR : Improper arguments for remove\n";
+			output = "ERROR : Improper arguments for remove\n";
 		int date = atoi(input[2].c_str());
 		int start = atoi(input[3].c_str());
 		if(date<=0 || start<=0)
-			return "ERROR : Date and start time must be positive integers\n";
+			output = "ERROR : Date and start time must be positive integers\n";
 		string result = cal.remove(date,start);
 		if(result == "Successfully Removed\n")
 			cal_user.put_data_user(user,cal);
-		return result;
+		output = result;
 
 	}
 	else if(func=="update"){
 		if(input.size() != 6)
-			return "ERROR : Improper number of arguments for update\n";
+			output = "ERROR : Improper number of arguments for update\n";
 		int date = atoi(input[2].c_str());
 		int start = atoi(input[3].c_str());
 		int end = atoi(input[4].c_str());
 		if(date<=0 || start<=0 || end<=0)
-			return "ERROR : Date,start and end time must be positive integers\n";
+			output = "ERROR : Date,start and end time must be positive integers\n";
 		if(start > end )
-			return "ERROR : Start must be before end\n";
+			output = "ERROR : Start must be before end\n";
 		string event = input[5];
 
 		cal_entry entry(start,end,event);
 		string result = cal.update(date,entry);
 		if(result == "Successfully Updated\n")
 			cal_user.put_data_user(user,cal);
-		return result;
+		output = result;
 
 	}
 	else if(func=="get"){
@@ -372,35 +388,42 @@ string maintain_calendar(string input_string){
 			int date = atoi(input[2].c_str());
 			int start = atoi(input[3].c_str());
 			if(date<=0 || start<=0)
-				return "ERROR : Date and start time must be positive integers\n";
-			return cal.get(date,start);
+				output = "ERROR : Date and start time must be positive integers\n";
+			output = cal.get(date,start);
 
 
 		}
 		else if(input.size() == 3){
 			int date = atoi(input[2].c_str());
 			if(date<=0)
-				return "ERROR : Date must be positive integers\n";
-			return cal.get(date);
+				output = "ERROR : Date must be positive integers\n";
+			output = cal.get(date);
 
 
 		}
 		else
-			return "ERROR : Improper argunments for get\n";
+			output = "ERROR : Improper argunments for get\n";
 
 	}
 	else if(func=="get_number"){
 		if(input.size() == 2){
-			return cal.get_number();	
+			output = cal.get_number();	
 		}else
-			return "ERROR : Improper Arguments\n";
+			output = "ERROR : Improper Arguments\n";
 	}
 	else if(func=="get_ith"){
 		if(input.size() == 3){
 			int i = atoi(input[2].c_str());
-			return cal.get_ith(i);
+			output = cal.get_ith(i);
 		}
+	
 	}
-	return "ERROR : Unknow function\n";
-
+	else
+	output = "ERROR : Unknow function\n";
+	
+	//Releasing the lock
+	lock[user] = true;
+	
+	cout << "in leaving for user - " << user <<endl;
+	return output;
 }

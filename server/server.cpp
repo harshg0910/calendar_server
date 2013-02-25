@@ -13,6 +13,7 @@ using namespace std;
 #define BUFFER_LEN 1000
 
 void error(const char *msg)
+
 {
 	perror(msg);
 	exit(1);
@@ -51,25 +52,34 @@ int main(int argc, char *argv[])
 				&clilen);
 		if (newsockfd < 0) 
 			error("ERROR on accept");
-		bzero(buffer,BUFFER_LEN	);
+
+
+			bzero(buffer,BUFFER_LEN	);
 		n = read(newsockfd,buffer,BUFFER_LEN);
-		if (n < 0) error("ERROR reading from socket");
-		
-		string to_send="";
-		vector<string> input_data;
-		char* token = strtok(buffer,"\n");
+		while(n !=0 ){
+			if (n < 0) error("ERROR reading from socket");
 
-		//We cannot parse nesting in strtok
-		do{
-			input_data.push_back(token);
-		}while( (token = strtok(NULL,"\n")) );
-		
-		for (unsigned int i=0;i<input_data.size();i++){	
-			to_send += maintain_calendar(input_data[i]) + "\n";
+			string to_send="";
+			vector<string> input_data;
+			char* token = strtok(buffer,"\n");
+			
+			//We cannot parse in nest using strtok
+			if(token != NULL){
+				do{
+					input_data.push_back(token);
+				}while( (token = strtok(NULL,"\n")) );
+			}
+			else input_data.push_back(buffer);
+
+			for (unsigned int i=0;i<input_data.size();i++){	
+				to_send += maintain_calendar(input_data[i]) + "\n";
+			}
+			n = write(newsockfd,to_send.c_str(),to_send.size());
+			if (n < 0) error("ERROR writing to socket");
+
+			bzero(buffer,BUFFER_LEN	);
+			n = read(newsockfd,buffer,BUFFER_LEN);
 		}
-		n = write(newsockfd,to_send.c_str(),to_send.size());
-		if (n < 0) error("ERROR writing to socket");
-
 		close(newsockfd);
 	}
 	close(sockfd);

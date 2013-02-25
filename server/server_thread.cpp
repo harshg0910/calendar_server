@@ -20,45 +20,51 @@ void error(const char *msg)
 }
 //TODO Check for correct date in calendar.cpp
 
-struct thread_arguments{
-	int newsockfd;
-	string buffer;
-};	
 
 void *thread_function(void *data ){
-	int newsockfd = ( (struct thread_arguments*) data)->newsockfd;
-	string to_send="";
-	vector<string> input_data;
-	char buf[BUFFER_LEN];
-	//have to do as .c_str() returns a const cahr* and I need cahr*
-	strcpy(buf,( ( (struct thread_arguments*) data)->buffer).c_str());
-	char* token = strtok(buf,"\n");
+	int newsockfd = *(int *)data;
+	char buffer[BUFFER_LEN];
 
-	cout << newsockfd <<"\t" << buf << endl;
-	//We cannot parse with nesting in strtok
-	do{
-		input_data.push_back(token);
-	}while( (token = strtok(NULL,"\n")) );
+	bzero(buffer,BUFFER_LEN);
+	int n = read(newsockfd,buffer,BUFFER_LEN);
 
-	for (unsigned int i=0;i<input_data.size();i++){	
-		to_send += maintain_calendar(input_data[i]) + "\n";
+	while(strlen(buffer) != 0){
+		if (n < 0) error("ERROR reading from socket");
+		string to_send="";
+		vector<string> input_data;
+
+		//have to do as .c_str() returns a const cahr* and I need cahr*
+		char* token = strtok(buffer,"\n");
+
+		//We cannot parse in nest using strtok
+		if(token != NULL){
+			do{
+				input_data.push_back(token);
+			}while( (token = strtok(NULL,"\n")) );
+		}
+		else input_data.push_back(buffer);
+
+		for (unsigned int i=0;i<input_data.size();i++){	
+			to_send += maintain_calendar(input_data[i]) + "\n";
+		}
+		int n = write(newsockfd,to_send.c_str(),to_send.size());
+		if (n < 0) error("ERROR writing to socket");
+		
+		bzero(buffer,BUFFER_LEN	);
+	
+	  	n = read(newsockfd,buffer,BUFFER_LEN);
+
+
 	}
-	int n = write(newsockfd,to_send.c_str(),to_send.size());
-	if (n < 0) error("ERROR writing to socket");
-
 	close(newsockfd);
-return NULL;
+	return NULL;
 }
 
 int main(int argc, char *argv[])
 {
-
-
 	int sockfd, newsockfd, portno;
 	socklen_t clilen;
-	char buffer[BUFFER_LEN];
 	struct sockaddr_in serv_addr, cli_addr;
-	int n;
 	if (argc < 2) {
 		fprintf(stderr,"ERROR, no port provided\n");
 		exit(1);
@@ -82,18 +88,11 @@ int main(int argc, char *argv[])
 				&clilen);
 		if (newsockfd < 0) 
 			error("ERROR on accept");
-		bzero(buffer,BUFFER_LEN	);
-		n = read(newsockfd,buffer,BUFFER_LEN);
-		if (n < 0) error("ERROR reading from socket");
 
 		pthread_t* thread = new pthread_t;
-		//int thread_id;
-		struct thread_arguments *data = new struct thread_arguments;
-		data->newsockfd = newsockfd;
-		data->buffer = string(buffer);
-		pthread_create(thread,NULL,thread_function ,(void *)data );
-
-
+		int *fd = new int;
+		*fd = newsockfd;
+		pthread_create(thread,NULL,thread_function ,(void *)fd );
 	}
 	close(sockfd);
 	return 0; 
