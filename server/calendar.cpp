@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <vector>
 #include <cstring>
+#include <ctime>
 
 //Global calnedar_user
 calendar_users cal_user;
@@ -10,18 +11,55 @@ calendar_users cal_user;
 //Global lock for user
 map<string,bool> lock;
 
-
-int check_date(int date){
-/*	short month,day,year;
+bool check_date(int date){
+	if(date <0 )
+		return false;
+	
+	//Date formate mmddyy
+	short month,day,year;
 	year = date % 100;
+	
 	date = date / 100;
-	month = date % 100;
-	date = date /100;
 	day = date % 100;
-*/
-	//if(month <= 12 && )
-	return 0;
+	
+	date = date /100;
+	month = date % 100;
+	
+	//month format is from 1 to 12
+	if(month == 0 || day == 0)
+		return false;
+	
+	if(month == 1 || month == 3|| month == 5||
+			month==7 || month ==8||month == 10||month == 12){
+		if(day > 31)
+			return false;
+	}else if(month == 2){
+		//leap year
+		if(year%4 ==0){
+			if(day > 29)
+				return false;
+		}else if(day > 28)
+			return false;
+	}else if(day > 30)
+		return false;
+
+	return true;
 }
+
+bool check_time(int start,int end){
+	if(start <0 || end <0)
+		return false;
+	if(start > end)
+		return false;
+	//minute is from 00 to 59
+	if(start%100 > 59 || end%100 > 59)
+		return false;
+	// hours are form 00 to 24
+	if(start/100 >24 || end/100 >24 )
+		return false;
+	return true;
+}
+
 
 string to_string(int a){
 	ostringstream convert;   // stream used for the conversion
@@ -101,7 +139,7 @@ string calendar::remove(int date,int start){
 	map<int,list<cal_entry> >::iterator map_it;
 
 	map_it = data.find(date);
-	
+
 	//checking of entry for that date exists
 	if(map_it == data.end()){
 		return "ERROR : No such date entry exists\n";
@@ -126,7 +164,7 @@ string calendar::update(int date,cal_entry entry){
 	map<int,list<cal_entry> >::iterator map_it;
 
 	map_it = data.find(date);
-	
+
 	//checking of entry for that date exists
 	if(map_it == data.end()){
 		return "ERROR : No such entry exists\n";
@@ -152,7 +190,7 @@ string calendar::get(int date,int start){
 	map<int,list<cal_entry> >::iterator map_it;
 
 	map_it = data.find(date);
-	
+
 	//checking of entry for that date exists
 	if(map_it == data.end()){
 		return "NO ENTRY FOR "+to_string(date)+"\n";
@@ -229,17 +267,17 @@ string calendar::get_ith(int i){
 
 	if(i > atoi(get_number().c_str()))
 		return "Not enough entry in calendar\n";
-	
+
 	for(map_it = data.begin();map_it != data.end();map_it++){
-		
+
 		//If i is in the current date
 		if(i <= (int)(map_it->second).size()){
 			list_date = (map_it->second);
 			result += to_string(map_it->first);
 			result += "\n";
 			int index = 0;
-				for(it=list_date.begin();it != list_date.end() && index <= i ;it++,index++){
-					if(index == i-1){
+			for(it=list_date.begin();it != list_date.end() && index <= i ;it++,index++){
+				if(index == i-1){
 					result += "\tStart:";
 					result += to_string((*it).start);
 					result += " End:";
@@ -247,9 +285,9 @@ string calendar::get_ith(int i){
 					result += " Event:";
 					result += (*it).event;
 					result += "\n";
-					}
-
 				}
+
+			}
 
 		}else{
 			//The required entry is in another date
@@ -274,6 +312,76 @@ calendar calendar_users::get_data_user(string username){
 
 void calendar_users::put_data_user(string username,calendar cal){
 	data_user[username] = cal;
+}
+
+void calendar_users::remove_expired_events(){
+	map<string,calendar>::iterator user;
+	map<int,list<cal_entry> >::iterator date;
+
+	for(user=data_user.begin();user != data_user.end() ; user++){
+		calendar cal = (*user).second;
+		for(date = cal.data.begin();date!= cal.data.end();date++){
+
+			list<cal_entry> l;	
+			list<cal_entry>::iterator it;
+			l = (*date).second;
+
+			for( it=l.begin() ; it!=l.end() ; it++){
+
+				if(it == l.begin()){	
+					cerr << "entry is null\n";
+				}
+				else{
+
+					int endtime = (*it).end;
+					int date_int = (*date).first;
+
+					struct tm d;
+					//date is of the format 031505
+					d.tm_year = date_int%100;
+					date_int /= 100;
+					d.tm_mday = date_int%100;
+					date_int /= 100;
+					d.tm_mon = date_int;
+					d.tm_min = endtime%100;
+					d.tm_hour = endtime/100;
+					d.tm_sec = 0 ;
+
+					time_t current_time;
+					time(&current_time);
+					if(difftime(current_time,mktime(&d) > 0 )){
+						//current date is greater than entry date
+						//remove the date entry
+						char buf_time[80];
+						strftime(buf_time,80,"%c",&d);
+						printf("Erasing entry : %s Event- %s",buf_time,(*it).event.c_str());
+						l.erase(it);
+						continue;
+					}
+					//we found the first entry which in not ended
+					//All further entries will be valid also
+					break;
+				}
+			}
+			if(l.empty()){
+				//no more entries for this date
+				cal.data.erase(date);
+			}else{
+				//updating date
+				(*date).second = l;
+			}
+
+		}
+		if(cal.data.empty()){
+			//No more entries for this user
+			cal_user.data_user.erase(user);
+		}else{
+			(*user).second = cal;
+
+		}
+
+	}
+
 }
 /*
    int main(){
@@ -317,6 +425,8 @@ string maintain_calendar(string input_string){
 
 	//getting lock
 	//new user for lock
+
+	//cal_user.remove_expired_events();
 	if(lock.find(user) == lock.end()){
 		lock[user] = false;
 	}else{
@@ -325,21 +435,26 @@ string maintain_calendar(string input_string){
 		lock[user] = false;
 	}
 
-	cout << "in critical for user - " << user <<endl;
+	//cout << "in critical for user - " << user <<endl;
 	//Critical section
 	calendar cal = cal_user.get_data_user(user);
 
 	string func = input[1];
 	if(func == "add"){
-		if(input.size() != 6)
-			output = "ERROR : Improper number of arguments for add\n";
+		if(input.size() != 6){
+			//Releasing the lock
+			lock[user] = true;
+			return "ERROR : Improper number of arguments for add\n";
+		}
+
 		int date = atoi(input[2].c_str());
 		int start = atoi(input[3].c_str());
 		int end = atoi(input[4].c_str());
-		if(date<=0 || start<=0 || end<=0)
-			output = "ERROR : Date,start and end time must be positive integers\n";
-		if(start > end )
-			output = "ERROR : Start must be before end\n";
+		if(!(check_date(date) && check_time(start ,end))){
+			//Releasing the lock
+			lock[user] = true;
+			return "ERROR : Improper date/time format or start is greater than end time \n";
+		}
 		string event = input[5];
 
 		cal_entry entry(start,end,event);
@@ -348,16 +463,22 @@ string maintain_calendar(string input_string){
 			cal_user.put_data_user(user,cal);
 		}
 		output = result;
-
-
 	}
 	else if(func=="remove"){
-		if(input.size() != 4)
-			output = "ERROR : Improper arguments for remove\n";
+		if(input.size() != 4){
+			//Releasing the lock
+			lock[user] = true;
+			return "ERROR : Improper arguments for remove\n";
+		}
 		int date = atoi(input[2].c_str());
 		int start = atoi(input[3].c_str());
-		if(date<=0 || start<=0)
-			output = "ERROR : Date and start time must be positive integers\n";
+
+		if(!(check_date(date) && check_time(start ,start+1))){
+			//Releasing the lock
+			lock[user] = true;
+			return "ERROR : Improper date/time format\n";
+		}
+
 		string result = cal.remove(date,start);
 		if(result == "Successfully Removed\n")
 			cal_user.put_data_user(user,cal);
@@ -365,15 +486,19 @@ string maintain_calendar(string input_string){
 
 	}
 	else if(func=="update"){
-		if(input.size() != 6)
-			output = "ERROR : Improper number of arguments for update\n";
+		if(input.size() != 6){
+			//Releasing the lock
+			lock[user] = true;
+			return "ERROR : Improper number of arguments for update\n";
+		}
 		int date = atoi(input[2].c_str());
 		int start = atoi(input[3].c_str());
 		int end = atoi(input[4].c_str());
-		if(date<=0 || start<=0 || end<=0)
-			output = "ERROR : Date,start and end time must be positive integers\n";
-		if(start > end )
-			output = "ERROR : Start must be before end\n";
+		if(!(check_date(date) && check_time(start ,end))){
+			//Releasing the lock
+			lock[user] = true;
+			return "ERROR : Improper date/time format or start is greater than end time \n";
+		}
 		string event = input[5];
 
 		cal_entry entry(start,end,event);
@@ -387,43 +512,59 @@ string maintain_calendar(string input_string){
 		if(input.size() == 4){
 			int date = atoi(input[2].c_str());
 			int start = atoi(input[3].c_str());
-			if(date<=0 || start<=0)
-				output = "ERROR : Date and start time must be positive integers\n";
+			if(!(check_date(date) && check_time(start ,start+1))){
+				//Releasing the lock
+				lock[user] = true;
+				return "ERROR : Improper date/time format\n";
+			}
 			output = cal.get(date,start);
 
 
 		}
 		else if(input.size() == 3){
 			int date = atoi(input[2].c_str());
-			if(date<=0)
-				output = "ERROR : Date must be positive integers\n";
+			if(!(check_date(date))){
+				//Releasing the lock
+				lock[user] = true;
+				return "ERROR : Improper date format\n";
+			}
 			output = cal.get(date);
 
 
 		}
-		else
-			output = "ERROR : Improper argunments for get\n";
-
+		else{
+			//Releasing the lock
+			lock[user] = true;
+			return "ERROR : Improper argunments for get\n";
+		}
 	}
 	else if(func=="get_number"){
 		if(input.size() == 2){
 			output = cal.get_number();	
-		}else
-			output = "ERROR : Improper Arguments\n";
+		}else{
+			//Releasing the lock
+			lock[user] = true;
+			return "ERROR : Improper Arguments\n";
+		}
 	}
 	else if(func=="get_ith"){
 		if(input.size() == 3){
 			int i = atoi(input[2].c_str());
 			output = cal.get_ith(i);
+		}else{
+			//Releasing the lock
+			lock[user] = true;
+			return "ERROR : Improper Arguments\n";
 		}
-	
+
+
 	}
 	else
-	output = "ERROR : Unknow function\n";
-	
+		output = "ERROR : Unknow function\n";
+
 	//Releasing the lock
 	lock[user] = true;
-	
-	cout << "in leaving for user - " << user <<endl;
+
+	//	cout << "in leaving for user - " << user <<endl;
 	return output;
 }

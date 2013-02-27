@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <netdb.h> 
 #include <ctime>
+#include <iostream>
 using namespace std;
 
 void error(const char *msg)
@@ -52,9 +53,10 @@ int main(int argc, char *argv[])
 	   strcat(buffer,argv[i]);
 	   strcat(buffer," ");
 	   }*/
-	for(int k=0;k<10;k++){
+	for(int k=0;k<100;k++){
 		sleep(1);
-		strcpy(buffer,"harsh1 add 1234 1234 2345 t1");
+		//strcpy(buffer,"harsh1 add 1234 1234 2345 t1");
+		cin.getline(buffer,255);
 		printf("%s\n",buffer);
 		n = write(sockfd,buffer,strlen(buffer));
 		if (n < 0) 
