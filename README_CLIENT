@@ -1,0 +1,44 @@
+All fucntionalities except getall can be accessed without client script also
+using nc - netcat command
+-------------------------------------------------------------------------
+To use client:
+$ make
+$ cd bin
+
+  A: Adding an event: 
+$./calendar hostname port myname add 031505 0800 0900 Exam
+  B: Removing an event: 
+$./calendar hostname port myname remove 031505 0800
+  C: Updating an event:
+$./calendar hostname port myname update 031505 0800 1000 OralExam
+  D: Getting an event 1: 
+$./calendar hostname port myname get 031505 0800
+  E: Getting an event 2: 
+$./calendar hostname port myname get 031505
+  F: 'getall'
+$./calendar hostname port myname getall
+
+--------------------------------------------------------------------------------
+ASSUMPTIONS
+1.Date format is mmddyy with month starting from 1 to 12,day from 1 to 28/29/30/31
+according to month and year is assumed to be 20yy
+2.Time should be of the format hhmm with hour ranging from 00 to 23 and minutes from
+00 to 59.The use of 9 instead of 0009 is supported.
+3.Start is must be less than end time.
+4.All entries with end time exceeding the current time is deleted
+
+-------------------------------------------------------------------------------
+2 additional features are implemented
+  G: Get the total number of entries of username
+$./calendar hostname port myname get_number
+  H: Get ith entry of a username
+$./calendar hostname port myname get_ith i
+
+
+-------------------------------------------------------------------------------
+To access all funtonalities except getall you can also use :
+$ echo "myname add 031505 0800 0900 Exam" | nc hostname port
+
+To run the test given in the client folder
+$ cat test | nc hostname port
+

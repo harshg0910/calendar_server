@@ -1,0 +1,10 @@
+user add 22714 0 100 test1
+user add 22714 200 300 test2
+user get 22714 200
+user get 22714
+user remove 22714 0
+user update 22714 200 400 testUpdated
+user get_number
+user get 22714
+user get_ith 1
+uesr get_ith 2

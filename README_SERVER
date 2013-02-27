@@ -1,0 +1,25 @@
+All complexity of the project is handled in the server with minimum dependency 
+on the client to function
+
+There are 3 types of server
+1.server.cpp
+	This handles the first part of server implementation.
+2.server_select.cpp
+	This include select().
+3.server_thread.cpp
+	Multithreading is taken care here
+
+calendar.cpp is the data structure taking care of the all the information
+
+calendar.h is the interface details of the data structure and is included in all the files
+
+--------------------------------------------------------------
+To start the server :
+$ make
+$ cd bin
+
+and one of the following 3 commands accordingly
+$./server PORT_NO
+$./server_select PORT_NO
+$./select_thread PORT_NO
+
