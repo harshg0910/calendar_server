@@ -315,53 +315,53 @@ void calendar_users::put_data_user(string username,calendar cal){
 }
 
 void calendar_users::remove_expired_events(){
+
 	map<string,calendar>::iterator user;
 	map<int,list<cal_entry> >::iterator date;
 
 	for(user=data_user.begin();user != data_user.end() ; user++){
-		calendar cal = (*user).second;
+		calendar cal = user->second;
+		
 		for(date = cal.data.begin();date!= cal.data.end();date++){
-
+			int date_int = date->first;
 			list<cal_entry> l;	
 			list<cal_entry>::iterator it;
-			l = (*date).second;
+			l = (date->second);
 
 			for( it=l.begin() ; it!=l.end() ; it++){
-
-				if(it == l.begin()){	
-					cerr << "entry is null\n";
-				}
-				else{
-
-					int endtime = (*it).end;
-					int date_int = (*date).first;
-
+				int endtime = it->end;
 					struct tm d;
 					//date is of the format 031505
 					d.tm_year = date_int%100;
+
+					//two digit year corresponds to 19XX
+					//to make it 20XX
+					d.tm_year += 100;
 					date_int /= 100;
 					d.tm_mday = date_int%100;
 					date_int /= 100;
-					d.tm_mon = date_int;
+					d.tm_mon = date_int -1 ;
 					d.tm_min = endtime%100;
 					d.tm_hour = endtime/100;
 					d.tm_sec = 0 ;
 
 					time_t current_time;
 					time(&current_time);
-					if(difftime(current_time,mktime(&d) > 0 )){
+					int diff = difftime(current_time,mktime(&d)); 
+					if(diff > 0 ){
 						//current date is greater than entry date
 						//remove the date entry
 						char buf_time[80];
 						strftime(buf_time,80,"%c",&d);
-						printf("Erasing entry : %s Event- %s",buf_time,(*it).event.c_str());
-						l.erase(it);
+						printf("Erasing entry : %s Event- %s\n",buf_time,(it->event).c_str());
+						
+						it = l.erase(it);
 						continue;
 					}
 					//we found the first entry which in not ended
 					//All further entries will be valid also
 					break;
-				}
+				
 			}
 			if(l.empty()){
 				//no more entries for this date
@@ -381,6 +381,7 @@ void calendar_users::remove_expired_events(){
 		}
 
 	}
+
 
 }
 /*
@@ -426,7 +427,7 @@ string maintain_calendar(string input_string){
 	//getting lock
 	//new user for lock
 
-	//cal_user.remove_expired_events();
+	cal_user.remove_expired_events();
 	if(lock.find(user) == lock.end()){
 		lock[user] = false;
 	}else{
